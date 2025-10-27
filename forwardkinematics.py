@@ -3,36 +3,52 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def create_trans_matrix(theta_deg, length):
-    theta_rad = math.radians(theta_deg)
-    cos_t = np.cos(theta_rad)
-    sin_t = np.sin(theta_rad)
-    return np.array([
-        [cos_t, -sin_t, length * cos_t],
-        [sin_t,  cos_t, length * sin_t],
-        [    0,      0,             1]
-    ])
+  theta_rad = math.radians(theta_deg)
+  cos_t = np.cos(theta_rad)
+  sin_t = np.sin(theta_rad)
+  return np.array([
+  [cos_t, -sin_t, length * cos_t],
+  [sin_t,  cos_t, length * sin_t],
+  [    0,      0,             1]
+  ])
 def forward_kinematics_matrix(L1, L2, theta1_deg, theta2_deg):
-    T1 = create_trans_matrix(theta1_deg, L1)
-    T2 = create_trans_matrix(theta2_deg, L2)
-    T_final = np.dot(T1, T2)
-    x1 = T1[0, 2]
-    y1 = T1[1, 2]
-    x2 = T_final[0, 2]
-    y2 = T_final[1, 2]
-    return (x1, y1), (x2, y2)
+  T1 = create_trans_matrix(theta1_deg, L1)
+  T2 = create_trans_matrix(theta2_deg, L2)
+  T_final = np.dot(T1, T2)
+  x1 = T1[0, 2]
+  y1 = T1[1, 2]
+  x2 = T_final[0, 2]
+  y2 = T_final[1, 2]
+  return (x1, y1), (x2, y2)
 def inverse_kinematics(x_target, y_target, L1, L2):
-    return theta1_deg, theta2_deg
+  print(f"\nMenghitung IK untuk target (x={x_target}, y={y_target})")
+  D_squared = x_target**2 + y_target**2
+  if D_squared > (L1+L2)**2:
+    print("Error: Target di luar jangkauan maksimum!")
+    return None, None #Kembalikan 'None' jika tidak terjangkau
+  if D_squared < (L1-L2)**2:
+    print("Error: Target di dalam jangkauan minimum!")
+    return None, None#Kembalikan 'None' jika tidak terjangkau
+  cos_theta2 = (D_squared-L1**2-L2**2)/(2*L1*L2)
+  theta2_rad = np.arccos(cos_theta2)
+  theta2_deg = np.degrees(theta2_rad)
+  k1 = L1 + L2 * np.cos(theta2_rad)
+  k2 = L2 * np.sin(theta2_rad)
+  theta1_rad = np.arctan2(y_target, x_target)-np.arctan2(k2, k1)
+  theta1_deg = np.degrees(theta1_rad)
+  print(f"Hasil IK: Theta1 = {theta1_deg:.2f} deg, Theta2 = {theta2_deg:.2f} deg")
+  return theta1_deg, theta2_deg
 def plot_arm(x1, y1, x2, y2, target_x=None, target_y=None, L1=0, L2=0):
-    origin_x, origin_y = 0, 0
-    total_length = L1 + L2 + 2
-    plt.figure()
-    plt.plot([origin_x, x1, x2], [origin_y, y1, y2], 'o-', color='blue', linewidth=3, markersize=8, label='Lengan Robot')
-    plt.plot(origin_x, origin_y, 'o', color='red', markersize=10, label='Sendi 1 (Origin)')
-    plt.plot(x1, y1, 'o', color='red', markersize=10, label='Sendi 2 (Siku)')
-    plt.plot(x2, y2, 'o', color='green', markersize=10, label='End-Effector')
-    if target_x is not None and target_y is not None:
-        plt.plot(target_x, target_y, 'rx', markersize=15, label='Target (x,y)')
-        plt.axis('equal')
+  origin_x, origin_y = 0, 0
+  total_length = L1 + L2 + 2
+  plt.figure()
+  plt.plot([origin_x, x1, x2], [origin_y, y1, y2], 'o-', color='blue', linewidth=3, markersize=8, label='Lengan Robot')
+  plt.plot(origin_x, origin_y, 'o', color='red', markersize=10, label='Sendi 1 (Origin)')
+  plt.plot(x1, y1, 'o', color='red', markersize=10, label='Sendi 2 (Siku)')
+  plt.plot(x2, y2, 'o', color='green', markersize=10, label='End-Effector')
+  if target_x is not None and target_y is not None:
+    plt.plot(target_x, target_y, 'rx', markersize=15, label='Target (x,y)')
+    plt.axis('equal')
     plt.xlim(-total_length, total_length)
     plt.ylim(-total_length, total_length)
     plt.grid()
@@ -42,22 +58,37 @@ def plot_arm(x1, y1, x2, y2, target_x=None, target_y=None, L1=0, L2=0):
     plt.show()
 
 if __name__ == "__main__":
-    L1 = 88.0   
-    L2 = 24.0   
-    theta1_deg = 40.0  
-    theta2_deg = 30.0  
-    print(f"Menghitung FK Study Case")
-    print(f"Input:")
-    print(f"L1 (femur)={L1}")
-    print(f"L2 (tibia)={L2}")
-    print(f"Theta 1={theta1_deg} derajat")
-    print(f"Theta 2={theta2_deg} derajat")
-    (siku_x, siku_y), (ujung_x, ujung_y) = forward_kinematics_matrix(
-        L1, L2, theta1_deg, theta2_deg
+  L1 = 88.0   
+  L2 = 24.0   
+  theta1_deg = 40.0  
+  theta2_deg = 30.0  
+  print(f"Menghitung FK Study Case")
+  print(f"Input:")
+  print(f"L1 (femur)={L1}")
+  print(f"L2 (tibia)={L2}")
+  print(f"Theta 1={theta1_deg} derajat")
+  print(f"Theta 2={theta2_deg} derajat") 
+  (siku_x, siku_y), (ujung_x, ujung_y) = forward_kinematics_matrix(L1, L2, theta1_deg, theta2_deg
     )
-    print(f"\nOutput:")
-    print(f"Koordinat Siku (Joint 2): (x={siku_x:.2f}, y={siku_y:.2f})")
-    print(f"KOORDINAT TITIK AKHIR (End-Effector):(x={ujung_x:.2f}, y={ujung_y:.2f})")
+  print(f"\nOutput:")
+  print(f"Koordinat Siku (Joint 2): (x={siku_x:.2f}, y={siku_y:.2f})")
+  print(f"KOORDINAT TITIK AKHIR (End-Effector):(x={ujung_x:.2f}, y={ujung_y:.2f})")
+  print("\nMenampilkan visualisasi...")
+  plot_arm (siku_x, siku_y, ujung_x, ujung_y, None, None, L1, L2)
+
+  TARGET_X = 75.62
+  TARGET_Y = 79.12
+  print(f"Parameter Lengan: L1={L1}, L2={L2}")
+  t1_hasil_ik, t2_hasil_ik = inverse_kinematics(TARGET_X, TARGET_Y, L1, L2)
+  if t1_hasil_ik is not None:
+    print(f"\nVerifikasi FK dengan hasil IK")
+    (siku_x, siku_y), (ujung_x, ujung_y) = forward_kinematics_matrix(
+    L1, L2, t1_hasil_ik, t2_hasil_ik
+    )
+    print(f"Posisi Ujung Hasil FK: (x={ujung_x:.2f}, y={ujung_y:.2f})")
+    print(f"Posisi Target Awal: (x={TARGET_X:.2f}, y={TARGET_Y:.2f})")
     print("\nMenampilkan visualisasi...")
-    plot_arm (siku_x, siku_y, ujung_x, ujung_y, None, None, L1, L2)
+    plot_arm(siku_x, siku_y, ujung_x, ujung_y, TARGET_X, TARGET_Y, L1, L2)
+
+  
     
